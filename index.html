@@ -1,0 +1,1228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FCFS CPU Scheduling Simulator</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Animate.css -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1 class="text-center animate__animated animate__fadeInDown">First-Come, First-Served (FCFS) CPU Scheduling</h1>
+            <p class="text-center mb-0 animate__animated animate__fadeIn animate__delay-1s">An interactive visualization of the FCFS scheduling algorithm</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Process Input Form -->
+        <div class="card process-form">
+            <div class="card-header">
+                <i class="bi bi-plus-circle me-2"></i>Add Processes
+            </div>
+            <div class="card-body">
+                <form id="processForm">
+                    <div class="row align-items-end">
+                        <div class="col-md-3">
+                            <label for="processName" class="form-label">Process Name</label>
+                            <input type="text" id="processName" class="form-control" required>
+                            <div class="invalid-feedback">Please enter a process name.</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="arrivalTime" class="form-label">Arrival Time (ms)</label>
+                            <input type="number" id="arrivalTime" class="form-control" min="0" required>
+                            <div class="invalid-feedback">Please enter a valid arrival time (≥ 0).</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="burstTime" class="form-label">Burst Time (ms)</label>
+                            <input type="number" id="burstTime" class="form-control" min="1" required>
+                            <div class="invalid-feedback">Please enter a valid burst time (≥ 1).</div>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-plus-lg me-1"></i>Add Process
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                <div class="mt-3">
+                    <button id="loadExampleBtn" class="btn btn-outline-secondary">
+                        <i class="bi bi-lightning-fill me-1"></i>Load Example
+                    </button>
+                    <button id="clearAllBtn" class="btn btn-outline-danger">
+                        <i class="bi bi-trash me-1"></i>Clear All
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Process Table -->
+        <div class="card process-table">
+            <div class="card-header">
+                <i class="bi bi-table me-2"></i>Process List
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">ID</th>
+                                <th scope="col">Name</th>
+                                <th scope="col">Arrival Time (ms)</th>
+                                <th scope="col">Burst Time (ms)</th>
+                                <th scope="col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="processTableBody">
+                            <!-- Process rows will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="emptyTableMessage" class="text-center text-muted py-3">
+                    No processes added yet. Use the form above to add processes.
+                </div>
+                <div class="text-center mt-3">
+                    <button id="startSimulationBtn" class="btn btn-success" disabled>
+                        <i class="bi bi-play-fill me-1"></i>Run Simulation
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visualization Section -->
+        <div id="visualizationSection" class="card d-none animate__animated animate__fadeIn">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <i class="bi bi-bar-chart-steps me-2"></i>Visualization
+                    </div>
+                    <div>
+                        <span class="badge bg-primary rounded-pill">
+                            <i class="bi bi-lightning-charge-fill me-1"></i>Real-time
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Gantt Chart -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="bi bi-distribute-horizontal me-2"></i>Gantt Chart</h5>
+                    <!-- Animation Controls -->
+                    <div class="animation-controls">
+                        <button id="animationControlBtn" class="btn btn-primary" data-state="paused">
+                            <i class="bi bi-play-fill me-1"></i>Play Animation
+                        </button>
+                        <span id="currentTimeLabel" class="ms-2">Time: 0ms</span>
+                    </div>
+                </div>
+                
+                <div class="gantt-container mb-4">
+                    <div id="ganttChart" class="border">
+                        <!-- Gantt blocks will be added here -->
+                    </div>
+                </div>
+                
+                <!-- Color Legend -->
+                <div class="mb-4">
+                    <div class="d-flex flex-wrap justify-content-center gap-3">
+                        <div class="d-flex align-items-center">
+                            <div class="color-dot" style="background-color: #4361ee;"></div>
+                            <span class="ms-2">Process 1</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="color-dot" style="background-color: #3a0ca3;"></div>
+                            <span class="ms-2">Process 2</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="color-dot" style="background-color: #7209b7;"></div>
+                            <span class="ms-2">Process 3</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="color-dot" style="background-color: #f72585;"></div>
+                            <span class="ms-2">Process 4</span>
+                        </div>
+                        <div class="d-flex align-items-center">
+                            <div class="color-dot" style="background-color: #6c757d;"></div>
+                            <span class="ms-2">CPU Idle</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Process Queues Visualization -->
+                <div class="card queue-visualization-card">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0"><i class="bi bi-layers-half me-2"></i>Process Queues</h5>
+                    </div>
+                    <div class="card-body py-4">
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="queue-title">
+                                    <i class="bi bi-hourglass-split me-2 text-warning"></i>Ready Queue
+                                </div>
+                                <div id="readyQueue" class="queue-box"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="queue-title">
+                                    <i class="bi bi-cpu-fill me-2 text-info"></i>CPU Execution
+                                </div>
+                                <div id="cpuExecution" class="queue-box idle"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="queue-title">
+                                    <i class="bi bi-check-circle-fill me-2 text-success"></i>Terminated
+                                </div>
+                                <div id="terminatedQueue" class="queue-box"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Performance Metrics -->
+                <div class="card metrics-card mt-4">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-speedometer2 me-2"></i>Performance Metrics
+                            </div>
+                            <span class="badge bg-success rounded-pill">
+                                <i class="bi bi-graph-up-arrow me-1"></i>Results
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body py-4">
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="metric-card">
+                                    <div class="metric-icon">
+                                        <i class="bi bi-clock-history"></i>
+                                    </div>
+                                    <div class="metric-value" id="avgTAT">-</div>
+                                    <div class="metric-label">Average Turnaround Time</div>
+                                    <div class="metric-info">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        <span>Completion Time - Arrival Time</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-card">
+                                    <div class="metric-icon">
+                                        <i class="bi bi-hourglass-split"></i>
+                                    </div>
+                                    <div class="metric-value" id="avgWT">-</div>
+                                    <div class="metric-label">Average Waiting Time</div>
+                                    <div class="metric-info">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        <span>Turnaround Time - Burst Time</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="metric-card">
+                                    <div class="metric-icon">
+                                        <i class="bi bi-cpu"></i>
+                                    </div>
+                                    <div class="metric-value" id="cpuUtilization">-</div>
+                                    <div class="metric-label">CPU Utilization</div>
+                                    <div class="metric-info">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        <span>Total Busy Time / Total Time × 100%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help Button -->
+    <button id="helpBtn" class="help-button" data-bs-toggle="modal" data-bs-target="#helpModal">
+        <i class="bi bi-question-lg"></i>
+    </button>
+
+    <!-- Help Modal -->
+    <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="helpModalLabel">
+                        <i class="bi bi-info-circle-fill me-2"></i>About FCFS CPU Scheduling
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="help-section">
+                                <h5><i class="bi bi-book me-2"></i>What is FCFS?</h5>
+                                <p>First-Come, First-Served (FCFS) is the simplest CPU scheduling algorithm. In this algorithm, the process that arrives first in the ready queue is allocated the CPU first.</p>
+                                <p>It is a non-preemptive scheduling algorithm, meaning once a process starts execution, it continues until it completes or is blocked.</p>
+                            </div>
+                            
+                            <div class="help-section mt-4">
+                                <h5><i class="bi bi-calculator me-2"></i>Key Metrics</h5>
+                                <ul class="list-group">
+                                    <li class="list-group-item d-flex">
+                                        <div class="me-2"><i class="bi bi-hourglass-split text-primary"></i></div>
+                                        <div>
+                                            <strong>Turnaround Time</strong>
+                                            <p class="mb-0 small text-muted">The time from when a process arrives until it completes.</p>
+                                            <p class="mb-0 small text-primary">Formula: Completion Time - Arrival Time</p>
+                                        </div>
+                                    </li>
+                                    <li class="list-group-item d-flex">
+                                        <div class="me-2"><i class="bi bi-clock-history text-primary"></i></div>
+                                        <div>
+                                            <strong>Waiting Time</strong>
+                                            <p class="mb-0 small text-muted">The time a process spends waiting in the ready queue.</p>
+                                            <p class="mb-0 small text-primary">Formula: Turnaround Time - Burst Time</p>
+                                        </div>
+                                    </li>
+                                    <li class="list-group-item d-flex">
+                                        <div class="me-2"><i class="bi bi-cpu text-primary"></i></div>
+                                        <div>
+                                            <strong>CPU Utilization</strong>
+                                            <p class="mb-0 small text-muted">The percentage of time the CPU is busy.</p>
+                                            <p class="mb-0 small text-primary">Formula: (Total Burst Time / Total Time) × 100%</p>
+                                        </div>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="help-section">
+                                <h5><i class="bi bi-check2-circle me-2"></i>Advantages</h5>
+                                <ul class="list-group">
+                                    <li class="list-group-item"><i class="bi bi-check-lg text-success me-2"></i>Simple and easy to implement</li>
+                                    <li class="list-group-item"><i class="bi bi-check-lg text-success me-2"></i>No overhead of context switching</li>
+                                    <li class="list-group-item"><i class="bi bi-check-lg text-success me-2"></i>Fair for processes that arrived first</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="help-section mt-4">
+                                <h5><i class="bi bi-x-circle me-2"></i>Disadvantages</h5>
+                                <ul class="list-group">
+                                    <li class="list-group-item"><i class="bi bi-x-lg text-danger me-2"></i>Can lead to "convoy effect"</li>
+                                    <li class="list-group-item"><i class="bi bi-x-lg text-danger me-2"></i>Not suitable for interactive systems</li>
+                                    <li class="list-group-item"><i class="bi bi-x-lg text-danger me-2"></i>Long average waiting time for processes</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="help-section mt-4">
+                                <h5><i class="bi bi-gear me-2"></i>How to Use This Simulator</h5>
+                                <ol class="list-group list-group-numbered">
+                                    <li class="list-group-item">Add processes with their arrival and burst times</li>
+                                    <li class="list-group-item">Click "Run Simulation" to generate the schedule</li>
+                                    <li class="list-group-item">Use "Play Animation" to visualize the process flow</li>
+                                    <li class="list-group-item">Observe the Gantt chart and performance metrics</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
+                                    <th>Burst Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>P1</td>
+                                    <td>0</td>
+                                    <td>4</td>
+                                </tr>
+                                <tr>
+                                    <td>P2</td>
+                                    <td>1</td>
+                                    <td>3</td>
+                                </tr>
+                                <tr>
+                                    <td>P3</td>
+                                    <td>2</td>
+                                    <td>5</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="mt-2">
+                        In this example, P1 arrives first and starts execution immediately. P2 and P3 arrive later but must wait for P1 to complete.
+                        The execution order will be P1 → P2 → P3.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Got it!</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JavaScript -->
+    <script>
+// Process Class Definition
+class Process {
+    constructor(id, name, arrivalTime, burstTime) {
+        this.id = id;
+        this.name = name;
+        this.arrivalTime = parseInt(arrivalTime);
+        this.burstTime = parseInt(burstTime);
+        this.remainingTime = parseInt(burstTime);
+        this.completionTime = null;
+        this.turnaroundTime = null;
+        this.waitingTime = null;
+        
+        // Assign color to process
+        this.color = getProcessColor(id);
+    }
+}
+
+// Global Variables
+let processes = [];
+let simulationRunning = false;
+let currentProcessId = 1;
+let currentTime = 0;
+let animationInterval = null;
+let readyQueue = [];
+let terminatedProcesses = [];
+let currentProcessInCPU = null;
+let timeline = [];
+
+// Process Colors
+const processColors = [
+    { bg: '#FF6B6B', text: '#FFFFFF' },
+    { bg: '#4ECDC4', text: '#FFFFFF' },
+    { bg: '#FFD166', text: '#000000' },
+    { bg: '#6B5B95', text: '#FFFFFF' },
+    { bg: '#00B8A9', text: '#FFFFFF' },
+    { bg: '#F08A5D', text: '#FFFFFF' },
+    { bg: '#B83B5E', text: '#FFFFFF' },
+    { bg: '#6A0572', text: '#FFFFFF' },
+    { bg: '#F9F871', text: '#000000' },
+    { bg: '#3D84A8', text: '#FFFFFF' }
+];
+
+function getProcessColor(id) {
+    return processColors[(id - 1) % processColors.length];
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', () => {
+    // Form Submission
+    document.getElementById('processForm').addEventListener('submit', handleFormSubmit);
+    
+    // Button Events
+    document.getElementById('clearAllBtn').addEventListener('click', clearAllProcesses);
+    document.getElementById('runSimulationBtn').addEventListener('click', startSimulation);
+    document.getElementById('animationControlBtn').addEventListener('click', toggleAnimation);
+    
+    // Help Modal
+    const helpModal = new bootstrap.Modal(document.getElementById('helpModal'));
+    document.getElementById('helpBtn').addEventListener('click', () => helpModal.show());
+});
+
+// Form Validation and Submission
+function handleFormSubmit(e) {
+    e.preventDefault();
+    
+    const processNameInput = document.getElementById('processName');
+    const arrivalTimeInput = document.getElementById('arrivalTime');
+    const burstTimeInput = document.getElementById('burstTime');
+    
+    // Reset validation
+    resetValidation([processNameInput, arrivalTimeInput, burstTimeInput]);
+    
+    // Validate inputs
+    let valid = true;
+    
+    // Process Name
+    if (!processNameInput.value.trim()) {
+        setInvalid(processNameInput, 'Process name is required');
+        valid = false;
+    }
+    
+    // Arrival Time
+    if (arrivalTimeInput.value === '' || isNaN(arrivalTimeInput.value) || parseInt(arrivalTimeInput.value) < 0) {
+        setInvalid(arrivalTimeInput, 'Arrival time must be a non-negative number');
+        valid = false;
+    }
+    
+    // Burst Time
+    if (burstTimeInput.value === '' || isNaN(burstTimeInput.value) || parseInt(burstTimeInput.value) < 1) {
+        setInvalid(burstTimeInput, 'Burst time must be a positive number');
+        valid = false;
+    }
+    
+    if (!valid) return;
+    
+    // Create and add process
+    const process = new Process(
+        currentProcessId++,
+        `P${processNameInput.value}`,
+        arrivalTimeInput.value,
+        burstTimeInput.value
+    );
+    
+    addProcess(process);
+    
+    // Reset form
+    processNameInput.value = '';
+    arrivalTimeInput.value = '0';
+    burstTimeInput.value = '1';
+    
+    // Focus on process name field
+    processNameInput.focus();
+}
+
+// Validation Helper Functions
+function resetValidation(inputs) {
+    inputs.forEach(input => {
+        input.classList.remove('is-invalid');
+        const feedbackElement = document.getElementById(`${input.id}Feedback`);
+        if (feedbackElement) {
+            feedbackElement.textContent = '';
+        }
+    });
+}
+
+function setInvalid(input, message) {
+    input.classList.add('is-invalid');
+    const feedbackElement = document.getElementById(`${input.id}Feedback`);
+    if (feedbackElement) {
+        feedbackElement.textContent = message;
+    }
+}
+
+// Add Process to Table
+function addProcess(process) {
+    processes.push(process);
+    
+    // Hide empty state
+    document.getElementById('emptyTableRow').style.display = 'none';
+    
+    // Create table row
+    const row = document.createElement('tr');
+    row.id = `process-row-${process.id}`;
+    row.innerHTML = `
+        <td>
+            <span class="badge" style="background-color: ${process.color.bg}; color: ${process.color.text}">
+                ${process.name}
+            </span>
+        </td>
+        <td>${process.arrivalTime}</td>
+        <td>${process.burstTime}</td>
+        <td id="completion-${process.id}">-</td>
+        <td id="turnaround-${process.id}">-</td>
+        <td id="waiting-${process.id}">-</td>
+        <td>
+            <button class="btn btn-sm btn-danger remove-btn" data-process-id="${process.id}">
+                <i class="bi bi-trash"></i>
+            </button>
+        </td>
+    `;
+    
+    document.getElementById('processTableBody').appendChild(row);
+    
+    // Add event listener to remove button
+    row.querySelector('.remove-btn').addEventListener('click', () => {
+        removeProcess(process.id);
+    });
+    
+    // Enable run simulation button if at least one process exists
+    document.getElementById('runSimulationBtn').disabled = false;
+}
+
+// Remove Process
+function removeProcess(id) {
+    // Remove from array
+    processes = processes.filter(p => p.id !== id);
+    
+    // Remove from table
+    const row = document.getElementById(`process-row-${id}`);
+    if (row) {
+        row.remove();
+    }
+    
+    // Show empty state if no processes
+    if (processes.length === 0) {
+        document.getElementById('emptyTableRow').style.display = '';
+        document.getElementById('runSimulationBtn').disabled = true;
+    }
+}
+
+// Clear All Processes
+function clearAllProcesses() {
+    processes = [];
+    currentProcessId = 1;
+    
+    // Clear table
+    document.getElementById('processTableBody').innerHTML = `
+        <tr id="emptyTableRow">
+            <td colspan="7" class="text-center py-5">
+                <div id="emptyState">
+                    <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
+                    <p class="mt-3 text-muted">No processes added yet. Add a process to begin.</p>
+                </div>
+            </td>
+        </tr>
+    `;
+    
+    // Disable run button
+    document.getElementById('runSimulationBtn').disabled = true;
+    
+    // Reset visualization if visible
+    if (document.getElementById('visualizationSection').style.display !== 'none') {
+        resetVisualization();
+    }
+}
+
+
+
+// FCFS Scheduling Algorithm Implementation
+function calculateFCFS(processes) {
+    if (!processes.length) return { scheduledProcesses: [], timeline: [] };
+    
+    // Sort processes by arrival time
+    const sortedProcesses = [...processes].sort((a, b) => a.arrivalTime - b.arrivalTime);
+    const scheduledProcesses = [];
+    const timeline = [];
+    
+    let currentTime = 0;
+    let totalBurstTime = 0;
+    
+    // Process each process in arrival order
+    sortedProcesses.forEach(process => {
+        const p = { ...process };
+        
+        // If current time is less than arrival time, CPU is idle
+        if (currentTime < p.arrivalTime) {
+            // Add idle time to timeline
+            timeline.push({
+                isIdle: true,
+                start: currentTime,
+                end: p.arrivalTime
+            });
+            
+            // Update current time
+            currentTime = p.arrivalTime;
+        }
+        
+        // Set start and completion time
+        p.startTime = currentTime;
+        p.completionTime = currentTime + p.burstTime;
+        
+        // Calculate turnaround and waiting time
+        p.turnaroundTime = p.completionTime - p.arrivalTime;
+        p.waitingTime = p.turnaroundTime - p.burstTime;
+        
+        // Add to timeline
+        timeline.push({
+            process: p,
+            start: currentTime,
+            end: p.completionTime
+        });
+        
+        // Update current time
+        currentTime = p.completionTime;
+        totalBurstTime += p.burstTime;
+        
+        // Add to scheduled processes
+        scheduledProcesses.push(p);
+    });
+    
+    // Calculate performance metrics
+    const totalCompletionTime = currentTime;
+    const avgTurnaroundTime = scheduledProcesses.reduce((sum, p) => sum + p.turnaroundTime, 0) / scheduledProcesses.length;
+    const avgWaitingTime = scheduledProcesses.reduce((sum, p) => sum + p.waitingTime, 0) / scheduledProcesses.length;
+    const cpuUtilization = (totalBurstTime / totalCompletionTime) * 100;
+    
+    return {
+        scheduledProcesses,
+        timeline,
+        metrics: {
+            avgTAT: avgTurnaroundTime,
+            avgWT: avgWaitingTime,
+            cpuUtilization
+        }
+    };
+}
+
+// Start Simulation
+function startSimulation() {
+    if (processes.length === 0) return;
+    
+    // Disable run button and process inputs
+    document.getElementById('runSimulationBtn').disabled = true;
+    document.getElementById('processForm').querySelectorAll('input, button').forEach(el => {
+        el.disabled = true;
+    });
+    document.querySelectorAll('.remove-btn').forEach(btn => {
+        btn.disabled = true;
+    });
+    
+    // Show visualization sections
+    document.getElementById('visualizationSection').style.display = 'block';
+    document.getElementById('performanceMetricsSection').style.display = 'block';
+    
+    // Run the FCFS algorithm
+    const { scheduledProcesses, timeline, metrics } = calculateFCFS(processes);
+    
+    // Store the timeline
+    this.timeline = timeline;
+    
+    // Update process table with calculated values
+    scheduledProcesses.forEach(process => {
+        document.getElementById(`completion-${process.id}`).textContent = process.completionTime;
+        document.getElementById(`turnaround-${process.id}`).textContent = process.turnaroundTime;
+        document.getElementById(`waiting-${process.id}`).textContent = process.waitingTime;
+    });
+    
+    // Initialize visualization
+    initializeVisualization(scheduledProcesses, timeline);
+    
+    // Update metrics
+    updateMetrics(metrics);
+    
+    // Enable form and remove buttons again
+    setTimeout(() => {
+        document.getElementById('runSimulationBtn').disabled = false;
+        document.getElementById('processForm').querySelectorAll('input, button').forEach(el => {
+            el.disabled = false;
+        });
+        document.querySelectorAll('.remove-btn').forEach(btn => {
+            btn.disabled = false;
+        });
+    }, 1000);
+}
+
+// Initialize Visualization
+function initializeVisualization(scheduledProcesses, timeline) {
+    // Reset current state
+    resetVisualization();
+    
+    // Create Gantt chart
+    createGanttChart(timeline);
+    
+    // Set up animation initial state
+    currentTime = 0;
+    
+    // Update current time display
+    document.getElementById('currentTimeLabel').textContent = `Time: ${currentTime}ms`;
+    
+    // Set animation control button text
+    const animationBtn = document.getElementById('animationControlBtn');
+    animationBtn.innerHTML = '<i class="bi bi-play-fill me-1"></i> Play Animation';
+    animationBtn.dataset.state = 'paused';
+}
+
+// Create Gantt Chart
+function createGanttChart(timeline) {
+    const ganttChart = document.getElementById('ganttChart');
+    ganttChart.innerHTML = '';
+    
+    // Calculate scale factor (pixels per time unit)
+    const maxTime = timeline.length > 0 ? timeline[timeline.length - 1].end : 0;
+    const totalWidth = Math.max(ganttChart.clientWidth - 50, maxTime * 30); // Ensure minimum width
+    const scaleFactor = totalWidth / maxTime;
+    
+    // Create timeline markers container
+    const timelineMarkers = document.createElement('div');
+    timelineMarkers.className = 'timeline-markers position-absolute bottom-0 w-100 d-flex';
+    timelineMarkers.style.height = '20px';
+    
+    // Create blocks for each timeline event
+    timeline.forEach((event, index) => {
+        const width = (event.end - event.start) * scaleFactor;
+        const block = document.createElement('div');
+        block.className = 'process-block d-flex align-items-center justify-content-center';
+        block.style.width = `${width}px`;
+        block.style.height = '40px';
+        block.dataset.start = event.start;
+        block.dataset.end = event.end;
+        
+        if (event.isIdle) {
+            // Idle block
+            block.style.backgroundColor = '#6c757d';
+            block.style.color = '#fff';
+            block.textContent = 'Idle';
+        } else {
+            // Process block
+            const process = event.process;
+            block.style.backgroundColor = process.color.bg;
+            block.style.color = process.color.text;
+            block.textContent = process.name;
+            
+            // Tooltip data
+            block.title = `${process.name}: ${event.start} - ${event.end}`;
+        }
+        
+        ganttChart.appendChild(block);
+        
+        // Add time marker at the start of the block (except for first marker if it starts at 0)
+        if (index === 0 || event.start > 0) {
+            const startMarker = document.createElement('span');
+            startMarker.className = 'time-marker position-absolute';
+            startMarker.style.left = `${event.start * scaleFactor}px`;
+            startMarker.textContent = event.start;
+            timelineMarkers.appendChild(startMarker);
+        }
+        
+        // Add time marker at the end of the last block
+        if (index === timeline.length - 1) {
+            const endMarker = document.createElement('span');
+            endMarker.className = 'time-marker position-absolute';
+            endMarker.style.left = `${event.end * scaleFactor}px`;
+            endMarker.textContent = event.end;
+            timelineMarkers.appendChild(endMarker);
+        }
+    });
+    
+    // Add time markers to gantt container
+    const ganttContainer = document.querySelector('.gantt-container');
+    ganttContainer.appendChild(timelineMarkers);
+    
+    // Create timeline position marker
+    const timeMarker = document.createElement('div');
+    timeMarker.id = 'timeMarker';
+    timeMarker.className = 'timeline-marker';
+    timeMarker.style.left = '0px';
+    ganttChart.appendChild(timeMarker);
+}
+
+// Reset Visualization
+function resetVisualization() {
+    // Reset gantt chart
+    document.getElementById('ganttChart').innerHTML = '';
+    
+    // Reset queue displays
+    document.getElementById('readyQueue').innerHTML = '<span class="text-muted">No processes in ready queue</span>';
+    document.getElementById('cpuExecution').innerHTML = '<span class="text-muted">CPU Idle</span>';
+    document.getElementById('terminatedQueue').innerHTML = '<span class="text-muted">No terminated processes</span>';
+    
+    // Reset current time
+    currentTime = 0;
+    document.getElementById('currentTimeLabel').textContent = `Time: ${currentTime}ms`;
+    
+    // Reset animation state
+    if (animationInterval) {
+        clearInterval(animationInterval);
+        animationInterval = null;
+    }
+    
+    // Reset animation control button
+    const animationBtn = document.getElementById('animationControlBtn');
+    animationBtn.innerHTML = '<i class="bi bi-play-fill me-1"></i> Play Animation';
+    animationBtn.dataset.state = 'paused';
+}
+
+// Toggle Animation
+function toggleAnimation() {
+    const animationBtn = document.getElementById('animationControlBtn');
+    const state = animationBtn.dataset.state;
+    
+    if (state === 'paused') {
+        // Start animation
+        animationBtn.innerHTML = '<i class="bi bi-pause-fill me-1"></i> Pause Animation';
+        animationBtn.dataset.state = 'playing';
+        
+        // Reset to beginning if we were at the end
+        if (state === 'ended') {
+            resetVisualization();
+        }
+        
+        // Start animation interval - slower for better visualization
+        animationInterval = setInterval(() => {
+            updateAnimation();
+        }, 800); // Update every 800ms to make process movement more visible
+    } else if (state === 'playing') {
+        // Pause animation
+        animationBtn.innerHTML = '<i class="bi bi-play-fill me-1"></i> Resume Animation';
+        animationBtn.dataset.state = 'paused';
+        
+        // Clear interval
+        clearInterval(animationInterval);
+        animationInterval = null;
+    } else if (state === 'ended') {
+        // Restart animation
+        resetVisualization();
+        animationBtn.innerHTML = '<i class="bi bi-pause-fill me-1"></i> Pause Animation';
+        animationBtn.dataset.state = 'playing';
+        
+        // Start animation interval
+        animationInterval = setInterval(() => {
+            updateAnimation();
+        }, 800); // Update every 800ms
+    }
+}
+
+// Update Animation
+function updateAnimation() {
+    if (!timeline || timeline.length === 0) return;
+    
+    // Get max time from timeline
+    const maxTime = timeline[timeline.length - 1].end;
+    
+    // Increment current time
+    currentTime++;
+    
+    // Update time label
+    document.getElementById('currentTimeLabel').textContent = `Time: ${currentTime}ms`;
+    
+    // Move timeline marker
+    const ganttChart = document.getElementById('ganttChart');
+    const timeMarker = document.getElementById('timeMarker');
+    
+    if (ganttChart && timeMarker) {
+        // Calculate the position based on current time and scale
+        const maxTime = timeline[timeline.length - 1].end;
+        const ganttWidth = ganttChart.clientWidth;
+        const scaleFactor = ganttWidth / maxTime;
+        timeMarker.style.left = `${currentTime * scaleFactor}px`;
+        
+        // Ensure the Gantt chart is visible during animation
+        const ganttContainer = document.querySelector('.gantt-container');
+        ganttContainer.scrollLeft = Math.max(0, (currentTime * scaleFactor) - (ganttContainer.clientWidth / 2));
+    }
+    
+    // Check for change in current event and update Gantt accordingly
+    const previousEventIndex = findEventIndexAtTime(currentTime - 1);
+    const currentEventIndex = findEventIndexAtTime(currentTime);
+    
+    if (previousEventIndex !== currentEventIndex && currentEventIndex !== -1) {
+        // New event started - create a visual effect for the new Gantt block
+        const currentEvent = timeline[currentEventIndex];
+        createGanttBlockEffect(currentEvent);
+    }
+    
+    // Update queues with visual effects
+    updateQueuesAtTime(currentTime);
+    
+    // Stop animation if reached end
+    if (currentTime >= maxTime) {
+        clearInterval(animationInterval);
+        animationInterval = null;
+        
+        // Reset animation button
+        const animationBtn = document.getElementById('animationControlBtn');
+        animationBtn.innerHTML = '<i class="bi bi-arrow-counterclockwise me-1"></i> Restart Animation';
+        animationBtn.dataset.state = 'ended';
+        
+        // Update queues one last time
+        updateQueuesAtTime(maxTime);
+    }
+}
+
+// Helper to find current event index at specific time
+function findEventIndexAtTime(time) {
+    for (let i = 0; i < timeline.length; i++) {
+        if (time >= timeline[i].start && time < timeline[i].end) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+// Create visual effect for new Gantt block
+function createGanttBlockEffect(event) {
+    const ganttChart = document.getElementById('ganttChart');
+    
+    // Find the block that corresponds to the current event
+    const processBlocks = ganttChart.querySelectorAll('.process-block');
+    let currentBlock = null;
+    
+    processBlocks.forEach(block => {
+        const blockStart = parseInt(block.dataset.start);
+        const blockEnd = parseInt(block.dataset.end);
+        
+        if (blockStart === event.start && blockEnd === event.end) {
+            currentBlock = block;
+            // Add highlight effect
+            currentBlock.classList.add('highlight-block');
+            
+            // Remove highlight after animation
+            setTimeout(() => {
+                currentBlock.classList.remove('highlight-block');
+            }, 800);
+        }
+    });
+}
+
+// Update Queues At Current Time
+function updateQueuesAtTime(time) {
+    // Get processes at the current time
+    const sortedProcesses = [...processes].sort((a, b) => a.arrivalTime - b.arrivalTime);
+    
+    // Track previous state for animations
+    const prevReadyQueue = [...readyQueue];
+    const prevTerminatedProcesses = [...terminatedProcesses];
+    const prevProcessInCPU = currentProcessInCPU;
+    
+    // Reset queue displays
+    readyQueue = [];
+    terminatedProcesses = [];
+    currentProcessInCPU = null;
+    
+    // Find the current event in the timeline
+    let currentEvent = null;
+    for (const event of timeline) {
+        if (time >= event.start && time < event.end) {
+            currentEvent = event;
+            break;
+        }
+    }
+    
+    // Update UI based on current event
+    if (currentEvent) {
+        // For each sorted process, determine its state at the current time
+        sortedProcesses.forEach(process => {
+            // If arrived but not yet executed
+            if (process.arrivalTime <= time) {
+                if (currentEvent.isIdle || (currentEvent.process && currentEvent.process.id !== process.id)) {
+                    // In ready queue
+                    if (getCompletionTime(process.id) > time) {
+                        readyQueue.push(process);
+                    } else {
+                        // Process has completed
+                        terminatedProcesses.push(process);
+                    }
+                } else if (currentEvent.process && currentEvent.process.id === process.id) {
+                    // Currently executing
+                    currentProcessInCPU = process;
+                }
+            }
+        });
+    }
+    
+    // Check for process transitions for animation
+    // 1. Process moving from ready queue to CPU
+    if (currentProcessInCPU && prevReadyQueue.find(p => p.id === currentProcessInCPU.id) && !prevProcessInCPU) {
+        animateProcessMovement(currentProcessInCPU, 'ready-to-cpu');
+    }
+    
+    // 2. Process moving from CPU to terminated
+    if (prevProcessInCPU && terminatedProcesses.find(p => p.id === prevProcessInCPU.id)) {
+        animateProcessMovement(prevProcessInCPU, 'cpu-to-terminated');
+    }
+    
+    // Update ready queue display with highlight effect
+    updateQueueDisplay('readyQueue', readyQueue);
+    
+    // Update CPU display
+    updateCPUDisplay(currentProcessInCPU, currentEvent && currentEvent.isIdle);
+    
+    // Update terminated queue display with highlight effect
+    updateQueueDisplay('terminatedQueue', terminatedProcesses);
+    
+    // Update Gantt chart progress
+    updateGanttChartProgress(time);
+}
+
+// Update Queue Display
+function updateQueueDisplay(elementId, queueProcesses) {
+    const queueElement = document.getElementById(elementId);
+    
+    if (queueProcesses.length === 0) {
+        queueElement.innerHTML = `<span class="text-muted">No processes in ${elementId === 'readyQueue' ? 'ready queue' : 'terminated state'}</span>`;
+    } else {
+        queueElement.innerHTML = '';
+        queueProcesses.forEach(process => {
+            const queueItem = document.createElement('div');
+            queueItem.className = 'queue-item';
+            queueItem.style.backgroundColor = process.color.bg;
+            queueItem.style.color = process.color.text;
+            queueItem.textContent = process.name;
+            queueElement.appendChild(queueItem);
+        });
+    }
+}
+
+// Update CPU Display
+function updateCPUDisplay(process, isIdle) {
+    const cpuElement = document.getElementById('cpuExecution');
+    
+    if (isIdle || !process) {
+        cpuElement.innerHTML = '<span class="text-muted">CPU Idle</span>';
+    } else {
+        cpuElement.innerHTML = '';
+        const cpuItem = document.createElement('div');
+        cpuItem.className = 'queue-item animate-pulse';
+        cpuItem.style.backgroundColor = process.color.bg;
+        cpuItem.style.color = process.color.text;
+        cpuItem.style.width = '100%';
+        cpuItem.style.textAlign = 'center';
+        cpuItem.textContent = `Executing ${process.name}`;
+        cpuElement.appendChild(cpuItem);
+    }
+}
+
+// Get Completion Time for a Process
+function getCompletionTime(processId) {
+    // Find the process in the calculated results
+    for (const event of timeline) {
+        if (!event.isIdle && event.process && event.process.id === processId) {
+            return event.end;
+        }
+    }
+    return Infinity; // Not found or not completed yet
+}
+
+// Update Metrics Display
+function updateMetrics(metrics) {
+    document.getElementById('avgTurnaroundTime').textContent = metrics.avgTAT.toFixed(2);
+    document.getElementById('avgWaitingTime').textContent = metrics.avgWT.toFixed(2);
+    
+    const cpuUtilElement = document.getElementById('cpuUtilization');
+    cpuUtilElement.style.width = `${metrics.cpuUtilization}%`;
+    cpuUtilElement.textContent = `${metrics.cpuUtilization.toFixed(2)}%`;
+}
+
+// Animate Process Movement
+function animateProcessMovement(process, movementType) {
+    // Create animation container if not exists
+    const animationContainer = document.getElementById('processMoveAnimation');
+    animationContainer.innerHTML = '';
+    
+    // Create the moving process element
+    const movingProcess = document.createElement('div');
+    movingProcess.className = 'process-moving';
+    movingProcess.style.backgroundColor = process.color.bg;
+    movingProcess.style.color = process.color.text;
+    movingProcess.textContent = process.name;
+    
+    // Add arrows to indicate direction
+    const arrowElement = document.createElement('div');
+    
+    if (movementType === 'ready-to-cpu') {
+        // Add ready to CPU arrow
+        arrowElement.className = 'queue-arrow arrow-ready-to-cpu';
+        arrowElement.innerHTML = '<i class="bi bi-arrow-right-circle-fill"></i>';
+        document.querySelector('.col-md-4:nth-child(1)').appendChild(arrowElement);
+        
+        // Get positions
+        const readyQueueRect = document.getElementById('readyQueue').getBoundingClientRect();
+        const cpuRect = document.getElementById('cpuExecution').getBoundingClientRect();
+        
+        // Set initial position (in ready queue)
+        movingProcess.style.top = `${readyQueueRect.top - animationContainer.getBoundingClientRect().top + 20}px`;
+        movingProcess.style.left = `${readyQueueRect.right - animationContainer.getBoundingClientRect().left - 70}px`;
+        
+        // Add to container
+        animationContainer.appendChild(movingProcess);
+        
+        // Animate to CPU
+        setTimeout(() => {
+            movingProcess.style.top = `${cpuRect.top - animationContainer.getBoundingClientRect().top + 20}px`;
+            movingProcess.style.left = `${cpuRect.left - animationContainer.getBoundingClientRect().left + 30}px`;
+            
+            // Highlight CPU
+            document.getElementById('cpuExecution').classList.add('highlight');
+            
+            // Remove arrow and element after animation
+            setTimeout(() => {
+                arrowElement.remove();
+                movingProcess.remove();
+                document.getElementById('cpuExecution').classList.remove('highlight');
+            }, 600);
+        }, 100);
+    } 
+    else if (movementType === 'cpu-to-terminated') {
+        // Add CPU to terminated arrow
+        arrowElement.className = 'queue-arrow arrow-cpu-to-terminated';
+        arrowElement.innerHTML = '<i class="bi bi-arrow-right-circle-fill"></i>';
+        document.querySelector('.col-md-4:nth-child(2)').appendChild(arrowElement);
+        
+        // Get positions
+        const cpuRect = document.getElementById('cpuExecution').getBoundingClientRect();
+        const terminatedRect = document.getElementById('terminatedQueue').getBoundingClientRect();
+        
+        // Set initial position (in CPU)
+        movingProcess.style.top = `${cpuRect.top - animationContainer.getBoundingClientRect().top + 20}px`;
+        movingProcess.style.left = `${cpuRect.right - animationContainer.getBoundingClientRect().left - 70}px`;
+        
+        // Add to container
+        animationContainer.appendChild(movingProcess);
+        
+        // Animate to terminated
+        setTimeout(() => {
+            movingProcess.style.top = `${terminatedRect.top - animationContainer.getBoundingClientRect().top + 20}px`;
+            movingProcess.style.left = `${terminatedRect.left - animationContainer.getBoundingClientRect().left + 30}px`;
+            
+            // Highlight terminated queue
+            document.getElementById('terminatedQueue').classList.add('highlight');
+            
+            // Remove arrow and element after animation
+            setTimeout(() => {
+                arrowElement.remove();
+                movingProcess.remove();
+                document.getElementById('terminatedQueue').classList.remove('highlight');
+            }, 600);
+        }, 100);
+    }
+}
+
+// Update Gantt Chart Progress
+function updateGanttChartProgress(currentTime) {
+    const ganttChart = document.getElementById('ganttChart');
+    
+    // Find the current event in the timeline
+    let currentEvent = null;
+    for (const event of timeline) {
+        if (currentTime >= event.start && currentTime <= event.end) {
+            currentEvent = event;
+            break;
+        }
+    }
+    
+    if (!currentEvent) return;
+    
+    // Get all process blocks
+    const processBlocks = ganttChart.querySelectorAll('.process-block');
+    
+    // Find the block that corresponds to the current event
+    processBlocks.forEach(block => {
+        const blockStart = parseInt(block.dataset.start);
+        const blockEnd = parseInt(block.dataset.end);
+        
+        // Current block
+        if (blockStart === currentEvent.start && blockEnd === currentEvent.end) {
+            block.classList.add('building');
+            
+            // Calculate progress percentage within this block
+            const blockDuration = blockEnd - blockStart;
+            const elapsed = currentTime - blockStart;
+            const progressPercent = Math.min(100, (elapsed / blockDuration) * 100);
+            
+            // Update block style to show progress
+            block.style.background = `linear-gradient(90deg, 
+                ${currentEvent.isIdle ? '#6c757d' : currentEvent.process.color.bg} ${progressPercent}%, 
+                rgba(0,0,0,0.1) ${progressPercent}%)`;
+        }
+    });
+}
+    </script>
+</body>
+</html>
